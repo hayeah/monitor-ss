@@ -8,6 +8,9 @@ import (
 	"net/http"
 	"os"
 	"time"
+
+	metrics "github.com/rcrowley/go-metrics"
+	influxdb "github.com/vrischmann/go-metrics-influxdb"
 )
 
 type HTTPPingStatus struct {
@@ -118,6 +121,22 @@ func startMonitor(configFile string) (err error) {
 func main() {
 
 	configFile := os.Args[1]
+
+	go metrics.Log(
+		metrics.DefaultRegistry,
+		10*time.Second,
+		log.New(os.Stderr, "metrics: ", log.Lmicroseconds),
+	)
+
+	go influxdb.InfluxDB(metrics.DefaultRegistry,
+		10*time.Second,
+		"http://127.0.0.1:8086",
+		"monitorss",
+		"",
+		"",
+		// "username",
+		// "password",
+	)
 
 	err := startMonitor(configFile)
 	// err := checkGoogle()

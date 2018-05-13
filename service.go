@@ -11,6 +11,8 @@ import (
 	"os/exec"
 	"strconv"
 	"time"
+
+	"github.com/rcrowley/go-metrics"
 )
 
 const (
@@ -90,14 +92,17 @@ func (s *ssService) checkLoop(ctx context.Context, cancel context.CancelFunc) {
 			break
 		}
 
-		if ping.Err != nil {
-			s.stat.Fails++
-		} else {
-			s.stat.OKs++
-		}
-		s.stat.LastPingDuration = ping.Duration
+		// if ping.Err != nil {
+		// 	s.stat.Fails++
+		// } else {
+		// 	s.stat.OKs++
+		// }
+		// s.stat.LastPingDuration = ping.Duration
 
-		log.Printf("[%s] %v\n", s.id, s.stat)
+		t := metrics.GetOrRegisterTimer(fmt.Sprintf("%s.ping", s.id), nil)
+		t.Update(ping.Duration)
+
+		// log.Printf("[%s] %v\n", s.id, s.stat)
 
 		stagger := rand.Intn(300)
 		waitTime := checkTimeout + time.Duration(stagger)*time.Millisecond
