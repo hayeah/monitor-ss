@@ -37,3 +37,9 @@ A sample config file for multiple ss servers:
   }
 }
 ```
+
+# Build
+
+```
+go build -o monitor-ss *.go
+```

@@ -37,10 +37,15 @@ type ssService struct {
 	localPort int
 	// name      string
 	config SSServerConfig
+
+	stat ssServiceStat
 }
 
-// type ssServiceStat struct {
-// }
+type ssServiceStat struct {
+	Fails            uint64
+	OKs              uint64
+	LastPingDuration time.Duration
+}
 
 func (s *ssService) start(ctx context.Context) {
 	for {
@@ -70,22 +75,29 @@ func (s *ssService) checkLoop(ctx context.Context, cancel context.CancelFunc) {
 		Transport: transport,
 	}
 
-	// check roughly every 5 seconds
 	for {
-		// check if process is dead...
+		// check if process is already dead...
 		select {
 		case <-ctx.Done():
 			break
 		default:
 		}
 
-		pingStatus := checkURL(client, googleURL)
-		fmt.Printf("[%s] check %v\n", s.id, pingStatus)
+		ping := checkURL(client, googleURL)
 
-		if pingStatus.Err != nil {
+		if ping.Err != nil {
 			cancel()
 			break
 		}
+
+		if ping.Err != nil {
+			s.stat.Fails++
+		} else {
+			s.stat.OKs++
+		}
+		s.stat.LastPingDuration = ping.Duration
+
+		log.Printf("[%s] %v\n", s.id, s.stat)
 
 		stagger := rand.Intn(300)
 		waitTime := checkTimeout + time.Duration(stagger)*time.Millisecond
